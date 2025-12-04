@@ -9,11 +9,13 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	updatepb "yadro.com/course/proto/update"
 	"yadro.com/course/update/adapters/db"
 	updategrpc "yadro.com/course/update/adapters/grpc"
+	natsadapter "yadro.com/course/update/adapters/nats"
 	"yadro.com/course/update/adapters/words"
 	"yadro.com/course/update/adapters/xkcd"
 	"yadro.com/course/update/config"
@@ -61,6 +63,14 @@ func run(cfg config.Config, log *slog.Logger) error {
 	if err != nil {
 		return fmt.Errorf("failed create Words client: %v", err)
 	}
+
+	// nats adapter
+	conn, err := nats.Connect("nats://localhost:4222")
+	if err != nil {
+		return fmt.Errorf("failed connect to nats: %v", err)
+	}
+	defer conn.Close()
+	publisher := natsadapter.NewNatsPublisher(log, conn)
 
 	// service
 	updater, err := core.NewService(log, storage, xkcd, words, cfg.XKCD.Concurrency)
