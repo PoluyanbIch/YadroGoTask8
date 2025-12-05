@@ -14,13 +14,14 @@ type Service struct {
 	db          DB
 	xkcd        XKCD
 	words       Words
+	publisher   Publisher
 	concurrency int
 	status      atomic.Value
 	isUpdating  int32
 }
 
 func NewService(
-	log *slog.Logger, db DB, xkcd XKCD, words Words, concurrency int,
+	log *slog.Logger, db DB, xkcd XKCD, words Words, publisher Publisher, concurrency int,
 ) (*Service, error) {
 	if concurrency < 1 {
 		return nil, fmt.Errorf("wrong concurrency specified: %d", concurrency)
@@ -30,6 +31,7 @@ func NewService(
 		db:          db,
 		xkcd:        xkcd,
 		words:       words,
+		publisher:   publisher,
 		concurrency: concurrency,
 		isUpdating:  0,
 	}
@@ -123,6 +125,10 @@ func (s *Service) Update(ctx context.Context) (err error) {
 			}
 		}
 	}
+	if err := s.publisher.Publish(ctx, "xkcd.db.updated", []byte("XKCD DB has been updated")); err != nil {
+		s.log.Error("publish update failed", "error", err)
+		return err
+	}
 	return nil
 }
 
@@ -150,6 +156,10 @@ func (s *Service) Status(ctx context.Context) ServiceStatus {
 func (s *Service) Drop(ctx context.Context) error {
 	if err := s.db.Drop(ctx); err != nil {
 		s.log.Error("db.drop", "error", err)
+		return err
+	}
+	if err := s.publisher.Publish(ctx, "xkcd.db.drop", []byte("XKCD db has been dropped")); err != nil {
+		s.log.Error("publish drop failed", "error", err)
 		return err
 	}
 	return nil

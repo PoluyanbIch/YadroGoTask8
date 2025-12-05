@@ -19,7 +19,7 @@ type DB interface {
 }
 
 type Publisher interface {
-	Publish(context.Context, string, string)
+	Publish(context.Context, string, []byte) error
 }
 
 type XKCD interface {

@@ -16,6 +16,7 @@ import (
 	"yadro.com/course/search/adapters/db"
 	searchgrpc "yadro.com/course/search/adapters/grpc"
 	"yadro.com/course/search/adapters/initiator"
+	"yadro.com/course/search/adapters/nats"
 	"yadro.com/course/search/adapters/words"
 	"yadro.com/course/search/core"
 
@@ -55,12 +56,26 @@ func run(cfg config.Config, log *slog.Logger) error {
 		return fmt.Errorf("failed create Words client: %v", err)
 	}
 
+	// nats adapter
+	subscriber, err := nats.NewNatsSubscriber(log, cfg.BrokerAddress)
+	if err != nil {
+		return fmt.Errorf("failed create Nats adapter")
+	}
+
 	// service
 	searcher := core.NewService(log, storage, words)
 
 	// context for Ctrl-C
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
+
+	// NATS subscriptions
+	if err := subscriber.Subscribe(ctx, "xkcd.db.update", searcher.UpdateSubHandler); err != nil {
+		return fmt.Errorf("failed subscribe update: %v", err)
+	}
+	if err := subscriber.Subscribe(ctx, "xkcd.db.drop", searcher.UpdateSubHandler); err != nil {
+		return fmt.Errorf("failed subscribe drop: %v", err)
+	}
 
 	// initiator
 	init := initiator.NewInitiator(cfg.IndexTTL, searcher, log)

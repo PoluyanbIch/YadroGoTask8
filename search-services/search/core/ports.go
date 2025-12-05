@@ -17,6 +17,10 @@ type Words interface {
 	Norm(ctx context.Context, phrase string) ([]string, error)
 }
 
+type Subscriber interface {
+	Subscribe(context.Context, string, func(context.Context, []byte) error) error
+}
+
 type Initiator interface {
 	BuildIndex(context.Context) error
 }

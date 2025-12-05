@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	updatepb "yadro.com/course/proto/update"
@@ -65,15 +64,13 @@ func run(cfg config.Config, log *slog.Logger) error {
 	}
 
 	// nats adapter
-	conn, err := nats.Connect("nats://localhost:4222")
+	publisher, err := natsadapter.NewNatsPublisher(log, cfg.BrokerAddress)
 	if err != nil {
-		return fmt.Errorf("failed connect to nats: %v", err)
+		return fmt.Errorf("failed create Nats adapter")
 	}
-	defer conn.Close()
-	publisher := natsadapter.NewNatsPublisher(log, conn)
 
 	// service
-	updater, err := core.NewService(log, storage, xkcd, words, cfg.XKCD.Concurrency)
+	updater, err := core.NewService(log, storage, xkcd, words, publisher, cfg.XKCD.Concurrency)
 	if err != nil {
 		return fmt.Errorf("failed create Update service: %v", err)
 	}

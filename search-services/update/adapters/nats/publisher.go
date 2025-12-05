@@ -12,11 +12,15 @@ type NatsPublisher struct {
 	conn *nats.Conn
 }
 
-func NewNatsPublisher(log *slog.Logger, conn *nats.Conn) *NatsPublisher {
+func NewNatsPublisher(log *slog.Logger, url string) (*NatsPublisher, error) {
+	conn, err := nats.Connect(url)
+	if err != nil {
+		return nil, err
+	}
 	return &NatsPublisher{
 		log:  log,
 		conn: conn,
-	}
+	}, nil
 }
 
 func (p *NatsPublisher) Publish(ctx context.Context, subject string, data []byte) error {
