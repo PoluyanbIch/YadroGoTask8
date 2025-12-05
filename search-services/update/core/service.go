@@ -125,7 +125,7 @@ func (s *Service) Update(ctx context.Context) (err error) {
 			}
 		}
 	}
-	if err := s.publisher.Publish(ctx, "xkcd.db.updated", []byte("XKCD DB has been updated")); err != nil {
+	if err := s.publisher.Publish(ctx, "xkcd.db.update", []byte("XKCD DB has been updated")); err != nil {
 		s.log.Error("publish update failed", "error", err)
 		return err
 	}
