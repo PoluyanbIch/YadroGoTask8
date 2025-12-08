@@ -287,7 +287,3 @@ func countSubstringInField(word string, field map[string]int) int {
 	}
 	return num
 }
-
-func (s *Service) UpdateSubHandler(ctx context.Context, msg []byte) error {
-	return s.BuildIndex(ctx)
-}

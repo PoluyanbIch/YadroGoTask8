@@ -70,10 +70,16 @@ func run(cfg config.Config, log *slog.Logger) error {
 	defer stop()
 
 	// NATS subscriptions
-	if err := subscriber.Subscribe(ctx, "xkcd.db.update", searcher.UpdateSubHandler); err != nil {
-		return fmt.Errorf("failed subscribe update: %v", err)
+	err = subscriber.Subscribe(ctx, "xkcd.db.update", func(ctx context.Context, _ []byte) error {
+		return searcher.BuildIndex(ctx)
+	})
+	if err != nil {
+		return fmt.Errorf("failed subscribe udpate: %v", err)
 	}
-	if err := subscriber.Subscribe(ctx, "xkcd.db.drop", searcher.UpdateSubHandler); err != nil {
+	err = subscriber.Subscribe(ctx, "xkcd.db.drop", func(ctx context.Context, _ []byte) error {
+		return searcher.BuildIndex(ctx)
+	})
+	if err != nil {
 		return fmt.Errorf("failed subscribe drop: %v", err)
 	}
 
